@@ -108,7 +108,7 @@ class UAVModel(object):
         # else:
         #     return True
         
-        if np.any(np.abs(self.state[0:3])>5):
+        if np.any(np.abs(self.state[0:3])>5) or np.any(np.abs(self.state[6:9])>5):
             return False
         else:
             return True
@@ -133,10 +133,10 @@ class UAVModel(object):
             self.state = np.zeros(self.state_dim)
             random = np.random.random(15)
             self.state[0:3] = 5*(random[0:3] - 0.5)
-            self.state[3:6] = 3*(random[3:6] - 0.5)
-            self.state[6:9] = 3*(random[6:9] - 0.5)
-            pitch = math.pi / 2 *(random[9]-0.5)
-            roll = math.pi / 2 *(random[10]-0.5)
+            self.state[3:6] = 1*(random[3:6] - 0.5)
+            self.state[6:9] = 1*(random[6:9] - 0.5)
+            pitch = math.pi / 4 *(random[9]-0.5)
+            roll = math.pi / 4 *(random[10]-0.5)
             r = Rotation.from_euler("xyz",[0,pitch,roll],degrees=False)
             self.state[9] = r.as_quat()[3]
             self.state[10:13] = r.as_quat()[0:3]
@@ -160,16 +160,18 @@ class UAVModel(object):
             # omega_sum = np.sum(self.state[6:9]**2)
             # return (-4*distance+100)+0*(-8*omega_sum+100)
 
-            # distance = np.sum(np.abs(self.state[0:3]-np.array([0,0,3])))
-            # omega_sum = np.sum(self.state[6:9]**2)
-            # if distance < 0.5 and np.sum(np.abs(self.state[3:6]))<0.5:
-            #     return 2000 + (-20*distance+100)+0.25*(-omega_sum+100)
-            # else:
-            #     return (-20*distance+100)+0.25*(-omega_sum+100)
+            distance = np.sum(np.abs(self.state[0:3]))
+            omega_sum = np.sum(self.state[6:9]**2)
+            if distance < 0.5 and np.sum(np.abs(self.state[3:6]))<0.5:
+                return 2000 + (-20*distance+100)+0.25*(-omega_sum+100)
+            else:
+                return (-20*distance+100)+0.25*(-omega_sum+100)
 
+
+            omega_sum = np.sum(self.state[6:9]**2)
             distance = np.sum(np.abs(self.state[0:3]))
             temp = math.pow(distance/C,B)
-            return (A-D)/(1+temp)+D
+            return (A-D)/(1+temp)+D + (-omega_sum+100)
 
     
     def integrate_only(self, state: np.ndarray, action: np.ndarray):
